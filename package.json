@@ -1,0 +1,9 @@
+{
+  "name": "fun-on-rio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node test/niche-filter.test.js",
+    "build:userscript": "node scripts/build-userscript.js"
+  }
+}
