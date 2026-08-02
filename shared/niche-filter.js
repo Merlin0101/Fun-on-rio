@@ -39,8 +39,18 @@
         }
       }
 
-      if (category.requirePromotion && !hasPromotionSignal(haystack)) {
-        return { relevant: false, category: categoryId, reason: "sem_sinal_de_promocao" };
+      if (category.requirePromotion) {
+        const threshold =
+          typeof category.minDiscountPercent === "number"
+            ? category.minDiscountPercent
+            : keywordConfig.defaultMinDiscountPercent || 0;
+        const discountOk =
+          typeof product.discountPercent === "number"
+            ? product.discountPercent >= threshold
+            : hasPromotionSignal(haystack);
+        if (!discountOk) {
+          return { relevant: false, category: categoryId, reason: "desconto_abaixo_do_minimo" };
+        }
       }
 
       return { relevant: true, category: categoryId, reason: "match:" + matchedKeyword };

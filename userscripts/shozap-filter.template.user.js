@@ -22,14 +22,12 @@
     periodLabels: ["Manhã", "Tarde", "Noite"],
   };
 
-  // TODO: ainda nao temos o HTML real da fila do Shozap.
-  // Ajustar estes seletores assim que tivermos um card de produto de exemplo.
   const SELECTORS = {
-    productCard: "[data-product-id], .product-card, .queue-item, li.product",
-    title: ".product-title, .title, h3, h4",
-    description: ".product-description, .description",
-    store: ".store-name, .seller",
-    deleteButton: "[aria-label='Excluir'], [title='Excluir'], button.delete, .delete-btn",
+    productCard: ".produto-card",
+    title: ".pcard-name",
+    store: ".pcard-shop",
+    discountBadge: ".pcard-badge-discount",
+    deleteButton: ".pcard-btn-danger",
     periodTabCandidates: "button, [role='tab']",
   };
 
@@ -41,11 +39,13 @@
 
   function extractProduct(cardEl) {
     const titleEl = cardEl.querySelector(SELECTORS.title);
-    const descriptionEl = cardEl.querySelector(SELECTORS.description);
     const storeEl = cardEl.querySelector(SELECTORS.store);
+    const discountEl = cardEl.querySelector(SELECTORS.discountBadge);
+    const discountMatch = discountEl ? discountEl.textContent.match(/(\d+)/) : null;
     return {
-      title: titleEl ? titleEl.textContent : cardEl.textContent,
-      description: [descriptionEl ? descriptionEl.textContent : "", storeEl ? storeEl.textContent : ""].join(" "),
+      title: titleEl ? titleEl.getAttribute("title") || titleEl.textContent : cardEl.textContent,
+      description: storeEl ? storeEl.textContent : "",
+      discountPercent: discountMatch ? Number(discountMatch[1]) : undefined,
     };
   }
 

@@ -49,8 +49,18 @@
         }
       }
 
-      if (category.requirePromotion && !hasPromotionSignal(haystack)) {
-        return { relevant: false, category: categoryId, reason: "sem_sinal_de_promocao" };
+      if (category.requirePromotion) {
+        const threshold =
+          typeof category.minDiscountPercent === "number"
+            ? category.minDiscountPercent
+            : keywordConfig.defaultMinDiscountPercent || 0;
+        const discountOk =
+          typeof product.discountPercent === "number"
+            ? product.discountPercent >= threshold
+            : hasPromotionSignal(haystack);
+        if (!discountOk) {
+          return { relevant: false, category: categoryId, reason: "desconto_abaixo_do_minimo" };
+        }
       }
 
       return { relevant: true, category: categoryId, reason: "match:" + matchedKeyword };
@@ -74,18 +84,16 @@
     periodLabels: ["Manhã", "Tarde", "Noite"],
   };
 
-  // TODO: ainda nao temos o HTML real da fila do Shozap.
-  // Ajustar estes seletores assim que tivermos um card de produto de exemplo.
   const SELECTORS = {
-    productCard: "[data-product-id], .product-card, .queue-item, li.product",
-    title: ".product-title, .title, h3, h4",
-    description: ".product-description, .description",
-    store: ".store-name, .seller",
-    deleteButton: "[aria-label='Excluir'], [title='Excluir'], button.delete, .delete-btn",
+    productCard: ".produto-card",
+    title: ".pcard-name",
+    store: ".pcard-shop",
+    discountBadge: ".pcard-badge-discount",
+    deleteButton: ".pcard-btn-danger",
     periodTabCandidates: "button, [role='tab']",
   };
 
-  const KEYWORD_CONFIG = {"$schema":"https://json-schema.org/draft-07/schema#","description":"Fonte unica de palavras-chave do nicho, usada para validar itens da fila do Shozap e das campanhas em Mercado Livre, Shopee e Amazon. Editar aqui reflete em todos os canais.","categories":{"eletronicos_pc":{"label":"Eletronicos para computador","keywords":["teclado","mouse","fone de ouvido","fone bluetooth","notebook"],"requireKnownBrand":false},"tenis_marcas":{"label":"Tenis de marca","keywords":["tenis","sneaker"],"requireKnownBrand":true,"brands":["adidas","nike","vans","puma","lacoste"]},"academia_suplementos":{"label":"Academia e suplementos","keywords":["short academia","whey protein","whey","creatina","melatonina"],"requireKnownBrand":false},"limpeza_promocao":{"label":"Limpeza (somente em promocao)","keywords":["sabao em po","omo","amaciante"],"requireKnownBrand":false,"requirePromotion":true},"beleza":{"label":"Beleza e cuidados pessoais","keywords":["creme facial","creme corporal","creme para o corpo"],"requireKnownBrand":false}},"knownBrands":["adidas","nike","vans","puma","lacoste","omo"],"genericExcludeTerms":["kit variado","sortido","generico","diversos modelos","sem marca"]};
+  const KEYWORD_CONFIG = {"$schema":"https://json-schema.org/draft-07/schema#","description":"Fonte unica de palavras-chave do nicho, usada para validar itens da fila do Shozap e das campanhas em Mercado Livre, Shopee e Amazon. Editar aqui reflete em todos os canais.","defaultMinDiscountPercent":30,"categories":{"eletronicos_pc":{"label":"Eletronicos para computador","keywords":["teclado","mouse","fone de ouvido","fone bluetooth","notebook"],"requireKnownBrand":false},"tenis_marcas":{"label":"Tenis de marca","keywords":["tenis","sneaker"],"requireKnownBrand":true,"brands":["adidas","nike","vans","puma","lacoste"]},"academia_suplementos":{"label":"Academia e suplementos","keywords":["short academia","whey protein","whey","creatina","melatonina"],"requireKnownBrand":false},"limpeza_promocao":{"label":"Limpeza (somente em promocao)","keywords":["sabao em po","omo","amaciante"],"requireKnownBrand":false,"requirePromotion":true},"beleza":{"label":"Beleza e cuidados pessoais","keywords":["creme facial","creme corporal","creme para o corpo"],"requireKnownBrand":false}},"knownBrands":["adidas","nike","vans","puma","lacoste","omo"],"genericExcludeTerms":["kit variado","sortido","generico","diversos modelos","sem marca"]};
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -93,11 +101,13 @@
 
   function extractProduct(cardEl) {
     const titleEl = cardEl.querySelector(SELECTORS.title);
-    const descriptionEl = cardEl.querySelector(SELECTORS.description);
     const storeEl = cardEl.querySelector(SELECTORS.store);
+    const discountEl = cardEl.querySelector(SELECTORS.discountBadge);
+    const discountMatch = discountEl ? discountEl.textContent.match(/(\d+)/) : null;
     return {
-      title: titleEl ? titleEl.textContent : cardEl.textContent,
-      description: [descriptionEl ? descriptionEl.textContent : "", storeEl ? storeEl.textContent : ""].join(" "),
+      title: titleEl ? titleEl.getAttribute("title") || titleEl.textContent : cardEl.textContent,
+      description: storeEl ? storeEl.textContent : "",
+      discountPercent: discountMatch ? Number(discountMatch[1]) : undefined,
     };
   }
 

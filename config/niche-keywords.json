@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "description": "Fonte unica de palavras-chave do nicho, usada para validar itens da fila do Shozap e das campanhas em Mercado Livre, Shopee e Amazon. Editar aqui reflete em todos os canais.",
+  "defaultMinDiscountPercent": 30,
   "categories": {
     "eletronicos_pc": {
       "label": "Eletronicos para computador",
