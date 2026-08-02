@@ -80,7 +80,10 @@
     // Coloque true pra validar o filtro antes de confiar na exclusao automatica.
     dryRun: false,
     clickDelayMs: 400,
-    tabSwitchDelayMs: 600,
+    confirmWaitMs: 250,
+    tabSwitchDelayMs: 300,
+    scrollTickDelayMs: 150,
+    maxScrollTicks: 400,
     periodLabels: ["Manhã", "Tarde", "Noite"],
     autoRun: {
       enabled: true,
@@ -96,8 +99,15 @@
     store: ".pcard-shop",
     discountBadge: ".pcard-badge-discount",
     deleteButton: ".pcard-btn-danger",
-    periodTabCandidates: "button, [role='tab']",
+    loadMoreSentinel: ".produtos-loading",
+    periodTabIds: {
+      "Manhã": "#btn-filter-manha",
+      Tarde: "#btn-filter-tarde",
+      Noite: "#btn-filter-noite",
+    },
   };
+
+  const CONFIRM_DELETE_TEXT = "Sim, Remover agora";
 
   const KEYWORD_CONFIG = {"$schema":"https://json-schema.org/draft-07/schema#","description":"Fonte unica de palavras-chave do nicho, usada para validar itens da fila do Shozap e das campanhas em Mercado Livre, Shopee e Amazon. Editar aqui reflete em todos os canais.","defaultMinDiscountPercent":30,"categories":{"eletronicos_pc":{"label":"Eletronicos para computador","keywords":["teclado","mouse","fone de ouvido","fone bluetooth","notebook"],"requireKnownBrand":false},"tenis_marcas":{"label":"Tenis de marca","keywords":["tenis","sneaker"],"requireKnownBrand":true,"brands":["adidas","nike","vans","puma","lacoste"]},"academia_suplementos":{"label":"Academia e suplementos","keywords":["short academia","whey protein","whey","creatina","melatonina"],"requireKnownBrand":false},"limpeza_promocao":{"label":"Limpeza (somente em promocao)","keywords":["sabao em po","omo","amaciante"],"requireKnownBrand":false,"requirePromotion":true},"beleza":{"label":"Beleza e cuidados pessoais","keywords":["creme facial","creme corporal","creme para o corpo"],"requireKnownBrand":false}},"knownBrands":["adidas","nike","vans","puma","lacoste","omo"],"genericExcludeTerms":["kit variado","sortido","generico","diversos modelos","sem marca"]};
 
@@ -118,13 +128,41 @@
   }
 
   function findPeriodTabs() {
-    const candidates = Array.from(document.querySelectorAll(SELECTORS.periodTabCandidates));
     return CONFIG.periodLabels
-      .map((label) => candidates.find((el) => el.textContent.trim().startsWith(label)))
+      .map((label) => document.querySelector(SELECTORS.periodTabIds[label]))
       .filter(Boolean);
   }
 
+  async function ensureAllCardsRendered(log) {
+    let previousCount = -1;
+    let stableRounds = 0;
+    for (let tick = 0; tick < CONFIG.maxScrollTicks && stableRounds < 3; tick++) {
+      const sentinel = document.querySelector(SELECTORS.loadMoreSentinel);
+      if (sentinel) {
+        sentinel.scrollIntoView({ block: "end" });
+      } else {
+        window.scrollBy(0, 1500);
+      }
+      await sleep(CONFIG.scrollTickDelayMs);
+      const currentCount = document.querySelectorAll(SELECTORS.productCard).length;
+      stableRounds = currentCount === previousCount ? stableRounds + 1 : 0;
+      previousCount = currentCount;
+    }
+    log(`Cards carregados no DOM: ${previousCount}.`);
+  }
+
+  async function confirmDeleteIfPrompted() {
+    await sleep(CONFIG.confirmWaitMs);
+    const confirmBtn = Array.from(document.querySelectorAll("button")).find((btn) =>
+      btn.textContent.includes(CONFIRM_DELETE_TEXT)
+    );
+    if (!confirmBtn) return false;
+    confirmBtn.click();
+    return true;
+  }
+
   async function sweepCurrentTab(log) {
+    await ensureAllCardsRendered(log);
     const cards = Array.from(document.querySelectorAll(SELECTORS.productCard));
     let removed = 0;
     for (const card of cards) {
@@ -142,7 +180,12 @@
         log(`(dry-run) removeria "${product.title}" [${result.reason}]`);
       } else {
         deleteBtn.click();
-        log(`Excluido "${product.title}" [${result.reason}]`);
+        const confirmed = await confirmDeleteIfPrompted();
+        if (!confirmed) {
+          log(`Aviso: modal de confirmacao nao encontrado para "${product.title}", pode nao ter sido removido.`);
+        } else {
+          log(`Excluido "${product.title}" [${result.reason}]`);
+        }
         await sleep(CONFIG.clickDelayMs);
       }
       removed++;
