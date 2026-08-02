@@ -42,12 +42,20 @@
       return { relevant: true, category: null, reason: "excecao_manual:" + matchedAllowlistKeyword };
     }
 
+    const matchedUniversalBrand = (keywordConfig.universalKnownBrands || []).find((brand) =>
+      containsKeyword(haystack, brand)
+    );
+    if (matchedUniversalBrand) {
+      return { relevant: true, category: null, reason: "marca_reconhecida:" + matchedUniversalBrand };
+    }
+
     for (const term of keywordConfig.genericExcludeTerms || []) {
       if (containsKeyword(haystack, term)) {
         return { relevant: false, category: null, reason: "termo_generico:" + term };
       }
     }
 
+    let lastCategoryFailure = null;
     for (const [categoryId, category] of Object.entries(keywordConfig.categories)) {
       const matchedKeyword = (category.keywords || []).find((kw) => containsKeyword(haystack, kw));
       if (!matchedKeyword) continue;
@@ -56,7 +64,8 @@
         const brands = category.brands || keywordConfig.knownBrands || [];
         const matchedBrand = brands.find((brand) => containsKeyword(haystack, brand));
         if (!matchedBrand) {
-          return { relevant: false, category: categoryId, reason: "sem_marca_conhecida" };
+          lastCategoryFailure = { category: categoryId, reason: "sem_marca_conhecida" };
+          continue;
         }
       }
 
@@ -70,13 +79,17 @@
             ? product.discountPercent >= threshold
             : hasPromotionSignal(haystack);
         if (!discountOk) {
-          return { relevant: false, category: categoryId, reason: "desconto_abaixo_do_minimo" };
+          lastCategoryFailure = { category: categoryId, reason: "desconto_abaixo_do_minimo" };
+          continue;
         }
       }
 
       return { relevant: true, category: categoryId, reason: "match:" + matchedKeyword };
     }
 
+    if (lastCategoryFailure) {
+      return { relevant: false, category: lastCategoryFailure.category, reason: lastCategoryFailure.reason };
+    }
     return { relevant: false, category: null, reason: "fora_do_nicho" };
   }
 

@@ -5,7 +5,10 @@
   "categories": {
     "eletronicos_pc": {
       "label": "Eletronicos para computador",
-      "keywords": ["teclado", "mouse", "fone de ouvido", "fone bluetooth", "notebook"],
+      "keywords": [
+        "teclado", "mouse", "fone de ouvido", "fone bluetooth", "notebook",
+        "headset", "monitor", "placa de video", "ssd", "memoria ram"
+      ],
       "requireKnownBrand": false
     },
     "tenis_marcas": {
@@ -20,18 +23,31 @@
       "requireKnownBrand": false
     },
     "limpeza_promocao": {
-      "label": "Limpeza (somente em promocao)",
+      "label": "Limpeza (somente em promocao, marca reconhecida nao dispensa esta regra)",
       "keywords": ["sabao em po", "omo", "amaciante"],
       "requireKnownBrand": false,
       "requirePromotion": true
     },
     "beleza": {
       "label": "Beleza e cuidados pessoais",
-      "keywords": ["creme facial", "creme corporal", "creme para o corpo"],
+      "keywords": [
+        "creme facial", "creme corporal", "creme para o corpo",
+        "protetor solar", "perfume", "maquiagem"
+      ],
       "requireKnownBrand": false
     }
   },
   "knownBrands": ["adidas", "nike", "vans", "puma", "lacoste", "omo"],
+  "universalKnownBrands": [
+    "adidas", "nike", "vans", "puma", "lacoste",
+    "samsung", "lg", "apple", "iphone", "xiaomi", "motorola", "sony",
+    "dell", "lenovo", "acer", "asus", "hp", "positivo", "multilaser",
+    "philips", "britania", "logitech", "hyperx", "razer", "jbl",
+    "brastemp", "consul", "electrolux", "mondial", "cadence", "arno", "oster",
+    "xbox", "playstation", "nintendo",
+    "nivea", "loreal", "neutrogena", "vichy", "la roche-posay", "eudora", "natura", "boticario",
+    "heinz"
+  ],
   "genericExcludeTerms": ["kit variado", "sortido", "generico", "diversos modelos", "sem marca"],
   "allowlistProductIds": [],
   "allowlistKeywords": []

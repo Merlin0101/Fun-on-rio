@@ -1,9 +1,19 @@
 # Fun on Rio - Filtro de Nicho
 
-Automacao para validar itens da fila do Shozap (e futuramente Mercado Livre,
-Shopee e Amazon) contra o nicho: marcas conhecidas, eletronicos para
-computador, tenis de marca, academia/suplementos, limpeza em promocao e
-beleza.
+Automacao para validar itens da fila do Shozap contra o nicho.
+
+Regra de relevancia (nessa ordem):
+1. Excecao manual (`allowlistProductIds` / `allowlistKeywords`) sempre vence.
+2. **Marca reconhecida vale em qualquer categoria de produto**
+   (`universalKnownBrands`) - ex: geladeira Brastemp, mochila Nike, Xbox,
+   Heinz. Sem marca reconhecida, o produto so entra se bater com uma das
+   categorias abaixo.
+3. Categorias com regra propria: eletronicos para computador, tenis de
+   marca (exige marca), academia/suplementos, limpeza (exige desconto
+   minimo mesmo sendo marca conhecida - ver nota abaixo), beleza.
+
+Nota: Omo/limpeza fica de fora da lista universal de marcas de proposito -
+senao ele passaria sempre, ignorando a regra de "so em promocao".
 
 ## Estrutura
 
@@ -41,6 +51,8 @@ regras gerais, editando `config/niche-keywords.json`:
 - `allowlistKeywords`: adicione uma palavra/frase (ex: "pre treino") pra
   liberar qualquer produto que contenha esse termo, mesmo fora das
   categorias definidas.
+- `universalKnownBrands`: adicione uma marca aqui pra liberar-la em
+  qualquer categoria de produto (nao so nas 5 categorias definidas).
 
 Depois de editar, rode `npm run build:userscript` de novo e reinstale o
 arquivo `dist` no Tampermonkey.

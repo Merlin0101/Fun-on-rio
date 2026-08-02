@@ -52,12 +52,20 @@
       return { relevant: true, category: null, reason: "excecao_manual:" + matchedAllowlistKeyword };
     }
 
+    const matchedUniversalBrand = (keywordConfig.universalKnownBrands || []).find((brand) =>
+      containsKeyword(haystack, brand)
+    );
+    if (matchedUniversalBrand) {
+      return { relevant: true, category: null, reason: "marca_reconhecida:" + matchedUniversalBrand };
+    }
+
     for (const term of keywordConfig.genericExcludeTerms || []) {
       if (containsKeyword(haystack, term)) {
         return { relevant: false, category: null, reason: "termo_generico:" + term };
       }
     }
 
+    let lastCategoryFailure = null;
     for (const [categoryId, category] of Object.entries(keywordConfig.categories)) {
       const matchedKeyword = (category.keywords || []).find((kw) => containsKeyword(haystack, kw));
       if (!matchedKeyword) continue;
@@ -66,7 +74,8 @@
         const brands = category.brands || keywordConfig.knownBrands || [];
         const matchedBrand = brands.find((brand) => containsKeyword(haystack, brand));
         if (!matchedBrand) {
-          return { relevant: false, category: categoryId, reason: "sem_marca_conhecida" };
+          lastCategoryFailure = { category: categoryId, reason: "sem_marca_conhecida" };
+          continue;
         }
       }
 
@@ -80,13 +89,17 @@
             ? product.discountPercent >= threshold
             : hasPromotionSignal(haystack);
         if (!discountOk) {
-          return { relevant: false, category: categoryId, reason: "desconto_abaixo_do_minimo" };
+          lastCategoryFailure = { category: categoryId, reason: "desconto_abaixo_do_minimo" };
+          continue;
         }
       }
 
       return { relevant: true, category: categoryId, reason: "match:" + matchedKeyword };
     }
 
+    if (lastCategoryFailure) {
+      return { relevant: false, category: lastCategoryFailure.category, reason: lastCategoryFailure.reason };
+    }
     return { relevant: false, category: null, reason: "fora_do_nicho" };
   }
 
@@ -131,7 +144,7 @@
 
   const CONFIRM_DELETE_TEXT = "Sim, Remover agora";
 
-  const KEYWORD_CONFIG = {"$schema":"https://json-schema.org/draft-07/schema#","description":"Fonte unica de palavras-chave do nicho, usada para validar itens da fila do Shozap e das campanhas em Mercado Livre, Shopee e Amazon. Editar aqui reflete em todos os canais.","defaultMinDiscountPercent":30,"categories":{"eletronicos_pc":{"label":"Eletronicos para computador","keywords":["teclado","mouse","fone de ouvido","fone bluetooth","notebook"],"requireKnownBrand":false},"tenis_marcas":{"label":"Tenis de marca","keywords":["tenis","sneaker"],"requireKnownBrand":true,"brands":["adidas","nike","vans","puma","lacoste"]},"academia_suplementos":{"label":"Academia e suplementos","keywords":["short academia","whey protein","whey","creatina","melatonina","pre treino"],"requireKnownBrand":false},"limpeza_promocao":{"label":"Limpeza (somente em promocao)","keywords":["sabao em po","omo","amaciante"],"requireKnownBrand":false,"requirePromotion":true},"beleza":{"label":"Beleza e cuidados pessoais","keywords":["creme facial","creme corporal","creme para o corpo"],"requireKnownBrand":false}},"knownBrands":["adidas","nike","vans","puma","lacoste","omo"],"genericExcludeTerms":["kit variado","sortido","generico","diversos modelos","sem marca"],"allowlistProductIds":[],"allowlistKeywords":[]};
+  const KEYWORD_CONFIG = {"$schema":"https://json-schema.org/draft-07/schema#","description":"Fonte unica de palavras-chave do nicho, usada para validar itens da fila do Shozap e das campanhas em Mercado Livre, Shopee e Amazon. Editar aqui reflete em todos os canais.","defaultMinDiscountPercent":30,"categories":{"eletronicos_pc":{"label":"Eletronicos para computador","keywords":["teclado","mouse","fone de ouvido","fone bluetooth","notebook","headset","monitor","placa de video","ssd","memoria ram"],"requireKnownBrand":false},"tenis_marcas":{"label":"Tenis de marca","keywords":["tenis","sneaker"],"requireKnownBrand":true,"brands":["adidas","nike","vans","puma","lacoste"]},"academia_suplementos":{"label":"Academia e suplementos","keywords":["short academia","whey protein","whey","creatina","melatonina","pre treino"],"requireKnownBrand":false},"limpeza_promocao":{"label":"Limpeza (somente em promocao, marca reconhecida nao dispensa esta regra)","keywords":["sabao em po","omo","amaciante"],"requireKnownBrand":false,"requirePromotion":true},"beleza":{"label":"Beleza e cuidados pessoais","keywords":["creme facial","creme corporal","creme para o corpo","protetor solar","perfume","maquiagem"],"requireKnownBrand":false}},"knownBrands":["adidas","nike","vans","puma","lacoste","omo"],"universalKnownBrands":["adidas","nike","vans","puma","lacoste","samsung","lg","apple","iphone","xiaomi","motorola","sony","dell","lenovo","acer","asus","hp","positivo","multilaser","philips","britania","logitech","hyperx","razer","jbl","brastemp","consul","electrolux","mondial","cadence","arno","oster","xbox","playstation","nintendo","nivea","loreal","neutrogena","vichy","la roche-posay","eudora","natura","boticario","heinz"],"genericExcludeTerms":["kit variado","sortido","generico","diversos modelos","sem marca"],"allowlistProductIds":[],"allowlistKeywords":[]};
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
