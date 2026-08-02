@@ -20,6 +20,12 @@
     clickDelayMs: 400,
     tabSwitchDelayMs: 600,
     periodLabels: ["Manhã", "Tarde", "Noite"],
+    autoRun: {
+      enabled: true,
+      afterHour: 21, // roda sozinho 1x por dia a partir dessa hora (horario local do navegador)
+      checkIntervalMs: 5 * 60 * 1000, // reverifica a cada 5 min enquanto a aba fica aberta
+      storageKey: "shozap-niche-filter:lastAutoRun",
+    },
   };
 
   const SELECTORS = {
@@ -107,6 +113,19 @@
     return totalRemoved;
   }
 
+  async function runWithButtonState(button, runningLabel) {
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = runningLabel;
+    const log = (msg) => console.log("[Shozap Filtro]", msg);
+    try {
+      await runFilter(log);
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+
   function injectRunButton() {
     const button = document.createElement("button");
     button.textContent = "Filtrar fila (nicho)";
@@ -114,20 +133,39 @@
       "position:fixed;bottom:20px;right:20px;z-index:99999;padding:10px 16px;" +
       "background:#e11d48;color:#fff;border:none;border-radius:8px;font-weight:600;" +
       "cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);";
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      const original = button.textContent;
-      button.textContent = "Filtrando...";
-      const log = (msg) => console.log("[Shozap Filtro]", msg);
-      try {
-        await runFilter(log);
-      } finally {
-        button.disabled = false;
-        button.textContent = original;
-      }
-    });
+    button.addEventListener("click", () => runWithButtonState(button, "Filtrando..."));
     document.body.appendChild(button);
+    return button;
   }
 
-  injectRunButton();
+  function getLocalDateKey(date) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  function shouldAutoRunNow() {
+    const { enabled, afterHour, storageKey } = CONFIG.autoRun;
+    if (!enabled) return false;
+    const now = new Date();
+    if (now.getHours() < afterHour) return false;
+    return localStorage.getItem(storageKey) !== getLocalDateKey(now);
+  }
+
+  function markAutoRunDone() {
+    localStorage.setItem(CONFIG.autoRun.storageKey, getLocalDateKey(new Date()));
+  }
+
+  function watchAutoRun(button) {
+    const maybeRun = () => {
+      if (!shouldAutoRunNow()) return;
+      markAutoRunDone();
+      console.log(`[Shozap Filtro] Revisao automatica das ${CONFIG.autoRun.afterHour}h iniciando.`);
+      runWithButtonState(button, "Revisao automatica...");
+    };
+    maybeRun();
+    setInterval(maybeRun, CONFIG.autoRun.checkIntervalMs);
+  }
+
+  const runButton = injectRunButton();
+  watchAutoRun(runButton);
 })();
