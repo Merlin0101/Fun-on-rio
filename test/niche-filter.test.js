@@ -57,6 +57,7 @@ const cases = [
   { title: "SSD 1TB Nvme Leitura Rapida", expectRelevant: true, expectCategory: "eletronicos_pc" },
   { title: "Memoria RAM 16GB DDR4", expectRelevant: true, expectCategory: "eletronicos_pc" },
   { title: "Headset Gamer com Microfone", expectRelevant: true, expectCategory: "eletronicos_pc" },
+  { title: "Perfumes Importados Diversos", expectRelevant: true, expectCategory: "beleza" },
 ];
 
 let failures = 0;
