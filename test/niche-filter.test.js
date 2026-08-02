@@ -31,11 +31,29 @@ const cases = [
     discountPercent: 50,
     expectRelevant: false,
   },
+  {
+    title: "Par AutoFalante Automotivo Flex4 Triaxial- JBL 110W Rms",
+    discountPercent: 60,
+    expectRelevant: false,
+  },
+  { title: "Kit Super Energetico Pre Treino Natural em po", expectRelevant: true, expectCategory: "academia_suplementos" },
+  {
+    title: "Umidificador generico qualquer",
+    itemId: "999",
+    keywordConfigOverride: { allowlistProductIds: ["999"] },
+    expectRelevant: true,
+  },
 ];
 
 let failures = 0;
 for (const testCase of cases) {
-  const result = classify({ title: testCase.title, discountPercent: testCase.discountPercent }, keywordConfig);
+  const config = testCase.keywordConfigOverride
+    ? { ...keywordConfig, ...testCase.keywordConfigOverride }
+    : keywordConfig;
+  const result = classify(
+    { title: testCase.title, discountPercent: testCase.discountPercent, itemId: testCase.itemId },
+    config
+  );
   const ok =
     result.relevant === testCase.expectRelevant &&
     (testCase.expectCategory === undefined || result.category === testCase.expectCategory);

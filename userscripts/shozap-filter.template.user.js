@@ -38,6 +38,7 @@
     discountBadge: ".pcard-badge-discount",
     deleteButton: ".pcard-btn-danger",
     loadMoreSentinel: ".produtos-loading",
+    listContainer: ".produtos-lista-pro",
     periodTabIds: {
       "Manhã": "#btn-filter-manha",
       Tarde: "#btn-filter-tarde",
@@ -59,6 +60,7 @@
     const discountEl = cardEl.querySelector(SELECTORS.discountBadge);
     const discountMatch = discountEl ? discountEl.textContent.match(/(\d+)/) : null;
     return {
+      itemId: cardEl.getAttribute("data-item-id") || undefined,
       title: titleEl ? titleEl.getAttribute("title") || titleEl.textContent : cardEl.textContent,
       description: storeEl ? storeEl.textContent : "",
       discountPercent: discountMatch ? Number(discountMatch[1]) : undefined,
@@ -75,10 +77,15 @@
     let previousCount = -1;
     let stableRounds = 0;
     for (let tick = 0; tick < CONFIG.maxScrollTicks && stableRounds < 3; tick++) {
+      const container = document.querySelector(SELECTORS.listContainer);
       const sentinel = document.querySelector(SELECTORS.loadMoreSentinel);
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
       if (sentinel) {
         sentinel.scrollIntoView({ block: "end" });
-      } else {
+      }
+      if (!container && !sentinel) {
         window.scrollBy(0, 1500);
       }
       await sleep(CONFIG.scrollTickDelayMs);
@@ -99,7 +106,7 @@
     return true;
   }
 
-  async function sweepCurrentTab(log) {
+  async function sweepCurrentTab(log, removedLog, periodLabel) {
     await ensureAllCardsRendered(log);
     const cards = Array.from(document.querySelectorAll(SELECTORS.productCard));
     let removed = 0;
@@ -126,9 +133,32 @@
         }
         await sleep(CONFIG.clickDelayMs);
       }
+      removedLog.push({
+        periodo: periodLabel || "",
+        itemId: product.itemId || "",
+        titulo: product.title,
+        categoria: result.category || "",
+        motivo: result.reason,
+        modo: CONFIG.dryRun ? "dry-run" : "excluido",
+      });
       removed++;
     }
     return removed;
+  }
+
+  function downloadRemovedLog(removedLog) {
+    if (removedLog.length === 0) return;
+    const header = ["periodo", "itemId", "titulo", "categoria", "motivo", "modo"];
+    const escapeCsv = (value) => `"${String(value).replace(/"/g, '""')}"`;
+    const rows = removedLog.map((entry) => header.map((key) => escapeCsv(entry[key])).join(","));
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `shozap-filtro-log-${getLocalDateKey(new Date())}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   async function runFilter(log) {
@@ -138,21 +168,24 @@
     }
 
     const tabs = findPeriodTabs();
+    const removedLog = [];
     let totalRemoved = 0;
 
     if (tabs.length === 0) {
-      totalRemoved += await sweepCurrentTab(log);
+      totalRemoved += await sweepCurrentTab(log, removedLog);
     } else {
       for (const tab of tabs) {
+        const periodLabel = tab.textContent.trim();
         tab.click();
         await sleep(CONFIG.tabSwitchDelayMs);
-        const removedInTab = await sweepCurrentTab(log);
-        log(`Aba "${tab.textContent.trim()}": ${removedInTab} item(ns) removido(s).`);
+        const removedInTab = await sweepCurrentTab(log, removedLog, periodLabel);
+        log(`Aba "${periodLabel}": ${removedInTab} item(ns) removido(s).`);
         totalRemoved += removedInTab;
       }
     }
 
     log(`Concluido. Total removido: ${totalRemoved}.`);
+    downloadRemovedLog(removedLog);
     return totalRemoved;
   }
 

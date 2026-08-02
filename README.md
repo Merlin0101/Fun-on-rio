@@ -24,10 +24,31 @@ npm run build:userscript # regenera userscripts/dist/shozap-filter.user.js
 ```
 
 Depois de gerar o `dist`, instale no Tampermonkey (ou Greasemonkey) e abra
-`https://shozap.com.br/`.
+`https://app.shozap.com.br/envios`. Um botao "Filtrar fila (nicho)" aparece
+no canto inferior direito; ele tambem roda sozinho 1x por dia a partir das
+21h se a aba estiver aberta.
+
+A cada execucao, um arquivo `shozap-filtro-log-AAAA-MM-DD.csv` e baixado
+automaticamente com todos os itens removidos (titulo, categoria, motivo).
+
+## Calibrando o filtro (lista de excecao)
+
+Se um item foi removido por engano, tem duas formas de liberar sem mudar as
+regras gerais, editando `config/niche-keywords.json`:
+
+- `allowlistProductIds`: cole o `itemId` do produto (esta no CSV do log) pra
+  liberar so aquele item especifico.
+- `allowlistKeywords`: adicione uma palavra/frase (ex: "pre treino") pra
+  liberar qualquer produto que contenha esse termo, mesmo fora das
+  categorias definidas.
+
+Depois de editar, rode `npm run build:userscript` de novo e reinstale o
+arquivo `dist` no Tampermonkey.
 
 ## Status
 
-Os seletores de DOM em `userscripts/shozap-filter.template.user.js`
-(`SELECTORS`) sao placeholders - ainda precisamos do HTML real de um card de
-produto da fila do Shozap para ajustar.
+Seletores confirmados com HTML real da fila (`.produto-card`,
+`.pcard-name`, `#btn-filter-manha/tarde/noite`, etc.). O endpoint interno
+`POST core.shozap.com.br/envios/produtos/remover` foi identificado mas nao
+usado ainda (falta capturar payload/headers) - possivel otimizacao futura
+pra trocar clique+scroll por chamada direta.

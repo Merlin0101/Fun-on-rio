@@ -16,7 +16,7 @@
     },
     "academia_suplementos": {
       "label": "Academia e suplementos",
-      "keywords": ["short academia", "whey protein", "whey", "creatina", "melatonina"],
+      "keywords": ["short academia", "whey protein", "whey", "creatina", "melatonina", "pre treino"],
       "requireKnownBrand": false
     },
     "limpeza_promocao": {
@@ -32,5 +32,7 @@
     }
   },
   "knownBrands": ["adidas", "nike", "vans", "puma", "lacoste", "omo"],
-  "genericExcludeTerms": ["kit variado", "sortido", "generico", "diversos modelos", "sem marca"]
+  "genericExcludeTerms": ["kit variado", "sortido", "generico", "diversos modelos", "sem marca"],
+  "allowlistProductIds": [],
+  "allowlistKeywords": []
 }

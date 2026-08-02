@@ -16,24 +16,45 @@
     return /\b(promo(cao)?|oferta|desconto|liquidacao|off\b|%\s?off)\b/.test(text);
   }
 
+  function escapeRegExp(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function containsKeyword(haystack, keyword) {
+    const normalizedKeyword = normalize(keyword);
+    if (!normalizedKeyword) return false;
+    return new RegExp("\\b" + escapeRegExp(normalizedKeyword) + "\\b").test(haystack);
+  }
+
   function classify(product, keywordConfig) {
     const title = normalize(product.title);
     const description = normalize(product.description || "");
     const haystack = title + " " + description;
 
+    const allowlistProductIds = (keywordConfig.allowlistProductIds || []).map(String);
+    if (product.itemId !== undefined && allowlistProductIds.includes(String(product.itemId))) {
+      return { relevant: true, category: null, reason: "excecao_manual:id" };
+    }
+    const matchedAllowlistKeyword = (keywordConfig.allowlistKeywords || []).find((kw) =>
+      containsKeyword(haystack, kw)
+    );
+    if (matchedAllowlistKeyword) {
+      return { relevant: true, category: null, reason: "excecao_manual:" + matchedAllowlistKeyword };
+    }
+
     for (const term of keywordConfig.genericExcludeTerms || []) {
-      if (haystack.includes(normalize(term))) {
+      if (containsKeyword(haystack, term)) {
         return { relevant: false, category: null, reason: "termo_generico:" + term };
       }
     }
 
     for (const [categoryId, category] of Object.entries(keywordConfig.categories)) {
-      const matchedKeyword = (category.keywords || []).find((kw) => haystack.includes(normalize(kw)));
+      const matchedKeyword = (category.keywords || []).find((kw) => containsKeyword(haystack, kw));
       if (!matchedKeyword) continue;
 
       if (category.requireKnownBrand) {
         const brands = category.brands || keywordConfig.knownBrands || [];
-        const matchedBrand = brands.find((brand) => haystack.includes(normalize(brand)));
+        const matchedBrand = brands.find((brand) => containsKeyword(haystack, brand));
         if (!matchedBrand) {
           return { relevant: false, category: categoryId, reason: "sem_marca_conhecida" };
         }
@@ -59,5 +80,5 @@
     return { relevant: false, category: null, reason: "fora_do_nicho" };
   }
 
-  return { classify, normalize, hasPromotionSignal };
+  return { classify, normalize, hasPromotionSignal, containsKeyword };
 });
