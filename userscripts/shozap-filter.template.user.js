@@ -22,6 +22,8 @@
     tabSwitchDelayMs: 300,
     scrollTickDelayMs: 150,
     maxScrollTicks: 400,
+    campaignSwitchDelayMs: 500,
+    campaignOpenTimeoutMs: 6000,
     periodLabels: ["Manhã", "Tarde", "Noite"],
     autoRun: {
       enabled: true,
@@ -44,6 +46,8 @@
       Tarde: "#btn-filter-tarde",
       Noite: "#btn-filter-noite",
     },
+    campaignMenuButton: ".card-menu-btn",
+    closeModalButton: ".modal-close.abs-close",
   };
 
   const CONFIRM_DELETE_TEXT = "Sim, Remover agora";
@@ -106,7 +110,7 @@
     return true;
   }
 
-  async function sweepCurrentTab(log, removedLog, periodLabel) {
+  async function sweepCurrentTab(log, removedLog, periodLabel, campaignName) {
     await ensureAllCardsRendered(log);
     const cards = Array.from(document.querySelectorAll(SELECTORS.productCard));
     let removed = 0;
@@ -134,6 +138,7 @@
         await sleep(CONFIG.clickDelayMs);
       }
       removedLog.push({
+        campanha: campaignName || "",
         periodo: periodLabel || "",
         itemId: product.itemId || "",
         titulo: product.title,
@@ -148,7 +153,7 @@
 
   function downloadRemovedLog(removedLog) {
     if (removedLog.length === 0) return;
-    const header = ["periodo", "itemId", "titulo", "categoria", "motivo", "modo"];
+    const header = ["campanha", "periodo", "itemId", "titulo", "categoria", "motivo", "modo"];
     const escapeCsv = (value) => `"${String(value).replace(/"/g, '""')}"`;
     const rows = removedLog.map((entry) => header.map((key) => escapeCsv(entry[key])).join(","));
     const csv = [header.join(","), ...rows].join("\n");
@@ -161,26 +166,92 @@
     URL.revokeObjectURL(url);
   }
 
+  function findCampaigns() {
+    const buttons = Array.from(document.querySelectorAll(SELECTORS.campaignMenuButton));
+    const campaigns = [];
+    for (const btn of buttons) {
+      const onclick = btn.getAttribute("onclick") || "";
+      const match = onclick.match(/toggleCardMenu\(event,\s*(\d+)\)/);
+      if (!match) continue;
+      const id = match[1];
+      const titleEl = document.querySelector(`#title-${id}`);
+      campaigns.push({ id, name: titleEl ? titleEl.textContent.trim() : `Campanha ${id}` });
+    }
+    return campaigns;
+  }
+
+  async function openCampaignQueue(id, log) {
+    if (typeof window.verProdutos !== "function") {
+      log(`Funcao verProdutos nao encontrada, nao consigo abrir a campanha ${id}.`);
+      return false;
+    }
+    window.verProdutos(id);
+    const maxTicks = Math.ceil(CONFIG.campaignOpenTimeoutMs / 150);
+    for (let i = 0; i < maxTicks; i++) {
+      await sleep(150);
+      if (document.querySelector(SELECTORS.productCard) || findPeriodTabs().length > 0) {
+        return true;
+      }
+    }
+    log(`Painel da campanha ${id} nao carregou a tempo.`);
+    return false;
+  }
+
+  function closeQueueModal() {
+    if (typeof window.closeModal === "function") {
+      window.closeModal("produtosModal");
+      return true;
+    }
+    const closeBtn = document.querySelector(SELECTORS.closeModalButton);
+    if (closeBtn) {
+      closeBtn.click();
+      return true;
+    }
+    return false;
+  }
+
+  async function sweepOpenQueue(log, removedLog, campaignName) {
+    const tabs = findPeriodTabs();
+    let totalRemoved = 0;
+    if (tabs.length === 0) {
+      totalRemoved += await sweepCurrentTab(log, removedLog, null, campaignName);
+    } else {
+      for (const tab of tabs) {
+        const periodLabel = tab.textContent.trim();
+        tab.click();
+        await sleep(CONFIG.tabSwitchDelayMs);
+        const removedInTab = await sweepCurrentTab(log, removedLog, periodLabel, campaignName);
+        log(`Aba "${periodLabel}": ${removedInTab} item(ns) removido(s).`);
+        totalRemoved += removedInTab;
+      }
+    }
+    return totalRemoved;
+  }
+
   async function runFilter(log) {
     if (!KEYWORD_CONFIG) {
       log("KEYWORD_CONFIG nao carregado, abortando.");
       return;
     }
 
-    const tabs = findPeriodTabs();
     const removedLog = [];
     let totalRemoved = 0;
+    const campaigns = findCampaigns();
 
-    if (tabs.length === 0) {
-      totalRemoved += await sweepCurrentTab(log, removedLog);
+    if (campaigns.length === 0) {
+      log("Nenhuma campanha encontrada na tela, filtrando a fila ja aberta.");
+      totalRemoved += await sweepOpenQueue(log, removedLog, null);
     } else {
-      for (const tab of tabs) {
-        const periodLabel = tab.textContent.trim();
-        tab.click();
-        await sleep(CONFIG.tabSwitchDelayMs);
-        const removedInTab = await sweepCurrentTab(log, removedLog, periodLabel);
-        log(`Aba "${periodLabel}": ${removedInTab} item(ns) removido(s).`);
-        totalRemoved += removedInTab;
+      log(`${campaigns.length} campanha(s) encontrada(s): ${campaigns.map((c) => c.name).join(", ")}`);
+      for (const campaign of campaigns) {
+        log(`Abrindo campanha "${campaign.name}"...`);
+        const opened = await openCampaignQueue(campaign.id, log);
+        if (!opened) continue;
+        const removedInCampaign = await sweepOpenQueue(log, removedLog, campaign.name);
+        log(`Campanha "${campaign.name}": ${removedInCampaign} item(ns) removido(s).`);
+        totalRemoved += removedInCampaign;
+        closeQueueModal();
+        await sleep(CONFIG.campaignSwitchDelayMs);
       }
     }
 

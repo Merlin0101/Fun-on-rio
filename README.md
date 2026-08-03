@@ -34,12 +34,20 @@ npm run build:userscript # regenera userscripts/dist/shozap-filter.user.js
 ```
 
 Depois de gerar o `dist`, instale no Tampermonkey (ou Greasemonkey) e abra
-`https://app.shozap.com.br/envios`. Um botao "Filtrar fila (nicho)" aparece
-no canto inferior direito; ele tambem roda sozinho 1x por dia a partir das
-21h se a aba estiver aberta.
+`https://app.shozap.com.br/envios` (a tela com os cards das campanhas, ex:
+Shoppe Zap, Amazon_Telegram, ML_Zap, ML_Telegram, Amazon Zap). Um botao
+"Filtrar fila (nicho)" aparece no canto inferior direito; ele tambem roda
+sozinho 1x por dia a partir das 21h se a aba estiver aberta.
+
+O script varre **todas as campanhas encontradas na tela automaticamente**:
+abre a fila de cada uma (`verProdutos(id)`), filtra as 3 abas de periodo,
+fecha (`closeModal('produtosModal')`) e passa pra proxima. Se nao encontrar
+nenhum card de campanha (ex: se voce ja estiver dentro de uma fila aberta),
+filtra so a fila que estiver na tela.
 
 A cada execucao, um arquivo `shozap-filtro-log-AAAA-MM-DD.csv` e baixado
-automaticamente com todos os itens removidos (titulo, categoria, motivo).
+automaticamente com todos os itens removidos (campanha, periodo, titulo,
+categoria, motivo).
 
 ## Calibrando o filtro (lista de excecao)
 
