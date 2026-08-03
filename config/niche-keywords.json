@@ -49,6 +49,13 @@
     "heinz"
   ],
   "genericExcludeTerms": ["kit variado", "sortido", "generico", "diversos modelos", "sem marca"],
-  "allowlistProductIds": [],
+  "allowlistProductIds": [
+    "43651013795",
+    "40050679056",
+    "20099237696",
+    "22399683615",
+    "23797465964",
+    "58207080817"
+  ],
   "allowlistKeywords": []
 }
