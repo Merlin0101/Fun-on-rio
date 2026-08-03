@@ -10,7 +10,10 @@ Regra de relevancia (nessa ordem):
    categorias abaixo.
 3. Categorias com regra propria: eletronicos para computador, tenis de
    marca (exige marca), academia/suplementos, limpeza (exige desconto
-   minimo mesmo sendo marca conhecida - ver nota abaixo), beleza.
+   minimo mesmo sendo marca conhecida - ver nota abaixo), beleza,
+   vestuario (roupas sociais/casual/basicos) e eletrodomesticos
+   (geladeira, air fryer, micro-ondas, liquidificador) - essas duas
+   ultimas nao exigem marca.
 
 Nota: Omo/limpeza fica de fora da lista universal de marcas de proposito -
 senao ele passaria sempre, ignorando a regra de "so em promocao".

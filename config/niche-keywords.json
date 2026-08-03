@@ -35,6 +35,19 @@
         "protetor solar", "perfume", "perfumes", "maquiagem"
       ],
       "requireKnownBrand": false
+    },
+    "vestuario": {
+      "label": "Roupas (sociais, casual, basicos)",
+      "keywords": [
+        "camisa social", "camisa polo", "camiseta polo", "calca jeans",
+        "cueca boxer", "cuecas boxer", "meias"
+      ],
+      "requireKnownBrand": false
+    },
+    "eletrodomesticos": {
+      "label": "Eletrodomesticos",
+      "keywords": ["geladeira", "air fryer", "micro-ondas", "microondas", "liquidificador"],
+      "requireKnownBrand": false
     }
   },
   "knownBrands": ["adidas", "nike", "vans", "puma", "lacoste", "omo"],

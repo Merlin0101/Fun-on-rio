@@ -49,8 +49,8 @@ const cases = [
   { title: "Ketchup Heinz 397g", expectRelevant: true },
   { title: "Console Xbox One 500GB", expectRelevant: true },
   { title: "Console PlayStation 5 Slim", expectRelevant: true },
-  { title: "Air Fryer 5L Digital", expectRelevant: false },
-  { title: "Kit Cuecas Boxer Adulto", expectRelevant: false },
+  { title: "Air Fryer 5L Digital", expectRelevant: true, expectCategory: "eletrodomesticos" },
+  { title: "Kit Cuecas Boxer Adulto", expectRelevant: true, expectCategory: "vestuario" },
   { title: "Protetor Solar Facial FPS 60", expectRelevant: true, expectCategory: "beleza" },
   { title: "Monitor Gamer 144hz Curvo", expectRelevant: true, expectCategory: "eletronicos_pc" },
   { title: "Placa de Video RTX 4060 8GB", expectRelevant: true, expectCategory: "eletronicos_pc" },
@@ -58,6 +58,13 @@ const cases = [
   { title: "Memoria RAM 16GB DDR4", expectRelevant: true, expectCategory: "eletronicos_pc" },
   { title: "Headset Gamer com Microfone", expectRelevant: true, expectCategory: "eletronicos_pc" },
   { title: "Perfumes Importados Diversos", expectRelevant: true, expectCategory: "beleza" },
+  { title: "Geladeira Duplex Frost Free 400L", expectRelevant: true, expectCategory: "eletrodomesticos" },
+  { title: "Micro-ondas 20L Branco Painel Digital", expectRelevant: true, expectCategory: "eletrodomesticos" },
+  { title: "Liquidificador 3 Velocidades 700W", expectRelevant: true, expectCategory: "eletrodomesticos" },
+  { title: "Calça Jeans Masculina Corte Reto Tradicional", expectRelevant: true, expectCategory: "vestuario" },
+  { title: "Camisa Social Feminina Listrada Crepe Premium", expectRelevant: true, expectCategory: "vestuario" },
+  { title: "Camisa Polo Masculina Basica Algodao Premium", expectRelevant: true, expectCategory: "vestuario" },
+  { title: "Kit ate 24 Pares Meias Masculina Sport Algodao", expectRelevant: true, expectCategory: "vestuario" },
 ];
 
 let failures = 0;
