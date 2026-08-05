@@ -40,7 +40,9 @@ Depois de gerar o `dist`, instale no Tampermonkey (ou Greasemonkey) e abra
 `https://app.shozap.com.br/envios` (a tela com os cards das campanhas, ex:
 Shoppe Zap, Amazon_Telegram, ML_Zap, ML_Telegram, Amazon Zap). Um botao
 "Filtrar fila (nicho)" aparece no canto inferior direito; ele tambem roda
-sozinho 1x por dia a partir das 21h se a aba estiver aberta.
+sozinho a cada 15 minutos (`autoRun.intervalMinutes`) enquanto a aba estiver
+aberta - as campanhas enviam pro grupo em intervalos parecidos, entao uma
+revisao 1x por dia nao e suficiente pra pegar tudo antes do envio.
 
 O script varre **todas as campanhas encontradas na tela automaticamente**:
 abre a fila de cada uma (`verProdutos(id)`), filtra as 3 abas de periodo,

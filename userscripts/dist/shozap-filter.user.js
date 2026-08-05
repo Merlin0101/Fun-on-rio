@@ -123,9 +123,10 @@
     periodLabels: ["Manhã", "Tarde", "Noite"],
     autoRun: {
       enabled: true,
-      afterHour: 21, // roda sozinho 1x por dia a partir dessa hora (horario local do navegador)
-      checkIntervalMs: 5 * 60 * 1000, // reverifica a cada 5 min enquanto a aba fica aberta
-      storageKey: "shozap-niche-filter:lastAutoRun",
+      // as campanhas enviam pro grupo a cada 15-30min o dia todo, entao a
+      // revisao roda no mesmo ritmo em vez de 1x por dia - senao produto
+      // fora do nicho pode ser enviado antes da proxima limpeza.
+      intervalMinutes: 15,
     },
   };
 
@@ -386,27 +387,26 @@
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
-  function shouldAutoRunNow() {
-    const { enabled, afterHour, storageKey } = CONFIG.autoRun;
-    if (!enabled) return false;
-    const now = new Date();
-    if (now.getHours() < afterHour) return false;
-    return localStorage.getItem(storageKey) !== getLocalDateKey(now);
-  }
+  let isAutoRunning = false;
 
-  function markAutoRunDone() {
-    localStorage.setItem(CONFIG.autoRun.storageKey, getLocalDateKey(new Date()));
+  async function autoRunTick(button) {
+    if (isAutoRunning) {
+      console.log("[Shozap Filtro] Revisao anterior ainda rodando, pulei esta rodada.");
+      return;
+    }
+    isAutoRunning = true;
+    console.log(`[Shozap Filtro] Revisao periodica iniciando (a cada ${CONFIG.autoRun.intervalMinutes} min).`);
+    try {
+      await runWithButtonState(button, "Revisao automatica...");
+    } finally {
+      isAutoRunning = false;
+    }
   }
 
   function watchAutoRun(button) {
-    const maybeRun = () => {
-      if (!shouldAutoRunNow()) return;
-      markAutoRunDone();
-      console.log(`[Shozap Filtro] Revisao automatica das ${CONFIG.autoRun.afterHour}h iniciando.`);
-      runWithButtonState(button, "Revisao automatica...");
-    };
-    maybeRun();
-    setInterval(maybeRun, CONFIG.autoRun.checkIntervalMs);
+    if (!CONFIG.autoRun.enabled) return;
+    autoRunTick(button);
+    setInterval(() => autoRunTick(button), CONFIG.autoRun.intervalMinutes * 60 * 1000);
   }
 
   const runButton = injectRunButton();
